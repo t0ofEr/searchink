@@ -1,0 +1,281 @@
+[
+    {
+        "category": "Cabeza y cuello",
+        "bodyParts": [
+            {
+                "name": "Cabeza",
+                "description": "Zona superior del cuerpo que incluye cráneo y cuero cabelludo."
+            },
+            {
+                "name": "Cara",
+                "description": "Parte frontal de la cabeza que contiene rasgos faciales."
+            },
+            {
+                "name": "Frente",
+                "description": "Área superior de la cara, sobre las cejas."
+            },
+            {
+                "name": "Ojos",
+                "description": "Órganos de la visión ubicados en la cara."
+            },
+            {
+                "name": "Nariz",
+                "description": "Estructura central de la cara responsable del olfato y respiración."
+            },
+            {
+                "name": "Orejas",
+                "description": "Órganos laterales de la cabeza responsables de la audición."
+            },
+            {
+                "name": "Boca",
+                "description": "Abertura facial para alimentación y comunicación."
+            },
+            {
+                "name": "Mandíbula",
+                "description": "Parte inferior de la cara que sostiene los dientes inferiores."
+            },
+            {
+                "name": "Mejillas",
+                "description": "Zonas laterales de la cara, entre nariz y orejas."
+            },
+            {
+                "name": "Cuello",
+                "description": "Estructura que conecta la cabeza con el torso."
+            },
+            {
+                "name": "Nuca",
+                "description": "Parte posterior del cuello."
+            },
+            {
+                "name": "Garganta",
+                "description": "Zona frontal interna del cuello relacionada con el sistema respiratorio y digestivo."
+            }
+        ]
+    },
+    {
+        "category": "Torso frontal",
+        "bodyParts": [
+            {
+                "name": "Pecho",
+                "description": "Parte superior frontal del torso que incluye músculos pectorales."
+            },
+            {
+                "name": "Abdomen",
+                "description": "Zona media frontal del torso que contiene órganos digestivos."
+            },
+            {
+                "name": "Pecho superior",
+                "description": "Porción alta de los músculos pectorales."
+            },
+            {
+                "name": "Pecho inferior",
+                "description": "Porción baja de los músculos pectorales."
+            },
+            {
+                "name": "Costillas",
+                "description": "Caja torácica frontal que protege corazón y pulmones."
+            },
+            {
+                "name": "Estómago",
+                "description": "Zona frontal asociada al órgano digestivo del mismo nombre."
+            },
+            {
+                "name": "Pelvis frontal",
+                "description": "Porción frontal de la pelvis."
+            },
+            {
+                "name": "Cintura",
+                "description": "Región estrecha del torso ubicada entre costillas y caderas."
+            }
+        ]
+    },
+    {
+        "category": "Torso posterior",
+        "bodyParts": [
+            {
+                "name": "Espalda alta",
+                "description": "Zona superior de la espalda, cercana a los hombros."
+            },
+            {
+                "name": "Espalda media",
+                "description": "Zona central de la espalda."
+            },
+            {
+                "name": "Espalda baja",
+                "description": "Zona lumbar de la espalda."
+            },
+            {
+                "name": "Omóplatos",
+                "description": "Huesos planos posteriores del torso, también llamados escápulas."
+            },
+            {
+                "name": "Lumbares",
+                "description": "Región baja de la espalda responsable de soporte."
+            },
+            {
+                "name": "Coxis",
+                "description": "Extremo inferior de la columna vertebral."
+            },
+            {
+                "name": "Pelvis posterior",
+                "description": "Zona trasera de la pelvis."
+            }
+        ]
+    },
+    {
+        "category": "Brazos",
+        "bodyParts": [
+            {
+                "name": "Hombro derecho",
+                "description": "Articulación superior del brazo derecho."
+            },
+            {
+                "name": "Hombro izquierdo",
+                "description": "Articulación superior del brazo izquierdo."
+            },
+            {
+                "name": "Bíceps derecho",
+                "description": "Músculo frontal del brazo derecho."
+            },
+            {
+                "name": "Bíceps izquierdo",
+                "description": "Músculo frontal del brazo izquierdo."
+            },
+            {
+                "name": "Tríceps derecho",
+                "description": "Músculo posterior del brazo derecho."
+            },
+            {
+                "name": "Tríceps izquierdo",
+                "description": "Músculo posterior del brazo izquierdo."
+            },
+            {
+                "name": "Antebrazo derecho",
+                "description": "Porción intermedia del brazo derecho entre codo y muñeca."
+            },
+            {
+                "name": "Antebrazo izquierdo",
+                "description": "Porción intermedia del brazo izquierdo entre codo y muñeca."
+            },
+            {
+                "name": "Codo derecho",
+                "description": "Articulación central del brazo derecho."
+            },
+            {
+                "name": "Codo izquierdo",
+                "description": "Articulación central del brazo izquierdo."
+            }
+        ]
+    },
+    {
+        "category": "Manos",
+        "bodyParts": [
+            {
+                "name": "Mano derecha",
+                "description": "Extremo del brazo derecho con dedos y palma."
+            },
+            {
+                "name": "Mano izquierda",
+                "description": "Extremo del brazo izquierdo con dedos y palma."
+            },
+            {
+                "name": "Muñeca derecha",
+                "description": "Articulación que conecta el antebrazo derecho con la mano."
+            },
+            {
+                "name": "Muñeca izquierda",
+                "description": "Articulación que conecta el antebrazo izquierdo con la mano."
+            },
+            {
+                "name": "Dedos de la mano derecha",
+                "description": "Extremidades digitales de la mano derecha."
+            },
+            {
+                "name": "Dedos de la mano izquierda",
+                "description": "Extremidades digitales de la mano izquierda."
+            }
+        ]
+    },
+    {
+        "category": "Piernas",
+        "bodyParts": [
+            {
+                "name": "Muslo derecho",
+                "description": "Parte superior de la pierna derecha."
+            },
+            {
+                "name": "Muslo izquierdo",
+                "description": "Parte superior de la pierna izquierda."
+            },
+            {
+                "name": "Rodilla derecha",
+                "description": "Articulación central de la pierna derecha."
+            },
+            {
+                "name": "Rodilla izquierda",
+                "description": "Articulación central de la pierna izquierda."
+            },
+            {
+                "name": "Pantorrilla derecha",
+                "description": "Zona posterior inferior de la pierna derecha."
+            },
+            {
+                "name": "Pantorrilla izquierda",
+                "description": "Zona posterior inferior de la pierna izquierda."
+            },
+            {
+                "name": "Pierna derecha",
+                "description": "Porción entre rodilla y tobillo en el lado derecho."
+            },
+            {
+                "name": "Pierna izquierda",
+                "description": "Porción entre rodilla y tobillo en el lado izquierdo."
+            },
+            {
+                "name": "Ingle derecha",
+                "description": "Zona interna entre pelvis y muslo derecho."
+            },
+            {
+                "name": "Ingle izquierda",
+                "description": "Zona interna entre pelvis y muslo izquierdo."
+            }
+        ]
+    },
+    {
+        "category": "Pies",
+        "bodyParts": [
+            {
+                "name": "Pie derecho",
+                "description": "Extremo inferior de la pierna derecha que permite apoyo."
+            },
+            {
+                "name": "Pie izquierdo",
+                "description": "Extremo inferior de la pierna izquierda que permite apoyo."
+            },
+            {
+                "name": "Tobillo derecho",
+                "description": "Articulación que une pierna derecha y pie derecho."
+            },
+            {
+                "name": "Tobillo izquierdo",
+                "description": "Articulación que une pierna izquierda y pie izquierdo."
+            },
+            {
+                "name": "Dedos del pie derecho",
+                "description": "Extremidades digitales del pie derecho."
+            },
+            {
+                "name": "Dedos del pie izquierdo",
+                "description": "Extremidades digitales del pie izquierdo."
+            },
+            {
+                "name": "Planta del pie derecho",
+                "description": "Superficie inferior del pie derecho."
+            },
+            {
+                "name": "Planta del pie izquierdo",
+                "description": "Superficie inferior del pie izquierdo."
+            }
+        ]
+    }
+]

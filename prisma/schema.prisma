@@ -1,0 +1,795 @@
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ENUMS
+enum GenderEnum {
+  MALE
+  FEMALE
+}
+
+enum ProjectStatusEnum {
+  DRAFT
+  PUBLISHED
+  OPEN
+  ASSIGNED
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ScheduleOfferStatus {
+  ACCEPTED
+  REJECTED
+  PENDING
+  CANCELLED
+}
+
+enum ReservationChangeRequestStatus {
+  ACCEPTED
+  REJECTED
+  PENDING
+  CANCELLED
+}
+
+// MODELS
+
+model User {
+  // Primary Fields
+  id             Int         @id @default(autoincrement())
+  username       String      @unique
+  name           String?     @db.VarChar(100)
+  lastname       String?     @db.VarChar(100)
+  email          String      @unique @db.VarChar(150)
+  phone_number   String?     @db.VarChar(20)
+  birthday_date  DateTime?
+  is_minor       Boolean?
+  avatar_url     String?     @db.VarChar(500)
+  gender         GenderEnum?
+
+  // Membership & Social
+  instagram_url         String?   @db.VarChar(500)
+  facebook_url          String?   @db.VarChar(500)
+  twitter_url           String?   @db.VarChar(500)
+  has_membership        Boolean   @default(false)
+  membership_start_date DateTime?
+  membership_end_date   DateTime?
+
+  // System & Metadata
+  active      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  modified_at DateTime @updatedAt
+
+  // Foreign Keys (Inbound Relations)
+  user_type_id Int
+  userType     UserType @relation(fields: [user_type_id], references: [id])
+
+  created_by Int
+  createdBy  User     @relation("UserCreator", fields: [created_by], references: [id])
+  modified_by Int
+  modifiedBy User     @relation("UserModifier", fields: [modified_by], references: [id])
+
+  // Outbound Relations (Self-Relations)
+  createdUsers  User[] @relation("UserCreator")
+  modifiedUsers User[] @relation("UserModifier")
+
+  // Outbound Relations (Associated Data)
+  addresses   UserAddress[] @relation("OwnerAddress")
+  roles       UserRole[]    @relation("UserRoleUser")
+  followers   UserFollow[]  @relation("Followed")
+  followings  UserFollow[]  @relation("Follower")
+  likes       Like[]
+  userNotifications UserNotification[]
+  authIdentities   AuthIdentity[]
+  parentalConsent ParentalConsent?
+
+  // Outbound Relations (Created/Modified Records)
+  schedules                 TattooArtistSchedule[] @relation("TattooArtistScheduleCreator")
+  modifiedSchedules         TattooArtistSchedule[] @relation("TattooArtistScheduleModifier")
+  createdUserAddresses      UserAddress[]          @relation("UserAddressCreator")
+  modifiedUserAddresses     UserAddress[]          @relation("UserAddressModifier")
+  createdUserRoles          UserRole[]             @relation("UserRoleCreator")
+  createdRoles              Role[]                 @relation("RoleCreator")
+  modifiedRoles             Role[]                 @relation("RoleModifier")
+  createdProjects           Project[]              @relation("ProjectCreator")
+  modifiedProjects          Project[]              @relation("ProjectModifier")
+  createdBodyParts          BodyPart[]             @relation("BodyPartCreator")
+  modifiedBodyParts         BodyPart[]             @relation("BodyPartModifier")
+  createdTattooStyles       TattooStyle[]          @relation("TattooStyleCreator")
+  modifiedTattooStyles      TattooStyle[]          @relation("TattooStyleModifier")
+  createdNews               News[]                 @relation("NewsCreator")
+  modifiedNews              News[]                 @relation("NewsModifier")
+  createdComments           Comment[]              @relation("CommentCreator")
+  modifiedComments          Comment[]              @relation("CommentModifier")
+  createdMediaFiles         MediaFile[]            @relation("MediaFileCreator")
+  modifiedMediaFiles        MediaFile[]            @relation("MediaFileModifier")
+  createdBodyPartCategories   BodyPartCategory[] @relation("BodyPartCategoryCreator")
+  modifiedBodyPartCategories  BodyPartCategory[] @relation("BodyPartCategoryModifier")
+
+  // Outbound Relations (Scheduling & Reservations)
+  requestedScheduleOffersBy ScheduleOffer[]          @relation("RequestedBySchedule")
+  requestedScheduleOffersTo ScheduleOffer[]          @relation("RequestedToSchedule")
+  scheduleOffersCreated     ScheduleOffer[]          @relation("ScheduleOfferCreator")
+  scheduleOffersModified    ScheduleOffer[]          @relation("ScheduleOfferModifier")
+  changeRequestsRequestedBy ReservationChangeRequest[] @relation("ChangeRequestRequestedBy")
+  changeRequestsRequestedTo ReservationChangeRequest[] @relation("ChangeRequestRequestedTo")
+  reservationChangeRequestsCreated  ReservationChangeRequest[] @relation("ReservationChangeRequestCreator")
+  reservationChangeRequestsModified ReservationChangeRequest[] @relation("ReservationChangeRequestModifier")
+  reservationsAsArtist      Reservation[]            @relation("ReservedArtist")
+  reservationsAsUser        Reservation[]            @relation("ReservedByUser")
+  reservationsCreated       Reservation[]            @relation("ReservationCreator")
+
+
+
+  // Indices and Map
+  @@index([created_by])
+  @@index([modified_by])
+  @@map("users")
+}
+
+model AuthIdentity {
+  id          Int    @id @default(autoincrement())
+  provider    AuthProvider
+  provider_id String
+  password    String?
+  user_id     Int
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@unique([provider, provider_id])
+  @@index([user_id])
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+}
+
+model ParentalConsent {
+  id                Int      @id @default(autoincrement())
+  user_id           Int      @unique
+  guardian_name     String
+  guardian_rut      String
+  guardian_phone    String
+  consent_signed_at DateTime
+  document_url      String?
+
+  user User @relation(fields: [user_id], references: [id])
+}
+
+model UserType {
+  id         Int      @id @default(autoincrement())
+  name       String   @db.VarChar(100)
+  active     Boolean  @default(true)
+  created_at DateTime @default(now())
+  users      User[]
+
+  @@map("user_types")
+}
+
+model UserAddress {
+  // Primary Fields
+  id             Int      @id @default(autoincrement())
+  address_line_1 String
+  address_line_2 String?
+  postal_code    String?  @db.VarChar(20)
+  latitude       Float?
+  longitude      Float?
+  is_primary     Boolean  @default(false)
+
+  // System & Metadata
+  active      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  modified_at DateTime? @updatedAt
+
+  // Foreign Keys (Inbound Relations)
+  municipality_id Int
+  municipality    Municipality @relation(fields: [municipality_id], references: [id])
+
+  user_id Int
+  user    User @relation("OwnerAddress", fields: [user_id], references: [id])
+
+  created_by Int
+  createdBy  User @relation("UserAddressCreator", fields: [created_by], references: [id])
+  modified_by Int?
+  modifiedBy  User? @relation("UserAddressModifier", fields: [modified_by], references: [id])
+
+  // Indices and Map
+  @@index([user_id])
+  @@index([created_by])
+  @@index([modified_by])
+  @@map("user_addresses")
+}
+
+model Municipality {
+  // Primary Fields
+  id         Int      @id @default(autoincrement())
+  name       String   @db.VarChar(150)
+
+  // System & Metadata
+  created_at DateTime @default(now())
+  modified_at DateTime? @updatedAt
+
+  // Foreign Keys (Inbound Relations)
+  region_id Int
+  region    Region @relation(fields: [region_id], references: [id])
+
+  // Outbound Relations
+  addresses UserAddress[]
+
+  // Indices and Map
+  @@unique([region_id, name])
+  @@index([region_id])
+  @@index([name])
+  @@map("municipalities")
+}
+
+model Region {
+  // Primary Fields
+  id         Int      @id @default(autoincrement())
+  name       String   @db.VarChar(150)
+  abbreviation   String   @db.VarChar(20)
+
+  // System & Metadata
+  active     Boolean  @default(true)
+  created_at DateTime @default(now())
+  modified_at DateTime? @updatedAt
+
+  // Foreign Keys (Inbound Relations)
+  country_id Int
+  country    Country @relation(fields: [country_id], references: [id])
+
+  // Outbound Relations
+  municipalities Municipality[]
+
+  // Indices and Map
+  @@unique([country_id, name])
+  @@index([country_id])
+  @@index([name])
+  @@map("regions")
+}
+
+model Country {
+  // Primary Fields
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(150)
+  iso2         String   @db.Char(2)
+  iso3         String   @db.Char(3)
+  phone_code   String?  @db.VarChar(10)
+
+  // System & Metadata
+  created_at DateTime @default(now())
+  modified_at DateTime? @updatedAt
+
+  // Outbound Relations
+  regions Region[]
+
+  // Indices and Map
+  @@index([name])
+  @@map("countries")
+}
+
+model UserRole {
+  // Primary Fields
+  id Int @id @default(autoincrement())
+
+  // System & Metadata
+  active      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  modified_at DateTime? @updatedAt
+
+  // Foreign Keys (Inbound Relations)
+  user_id Int
+  user    User @relation("UserRoleUser", fields: [user_id], references: [id])
+
+  role_id Int
+  role    Role @relation("UserRoleRole", fields: [role_id], references: [id])
+
+  created_by Int
+  createdBy  User @relation("UserRoleCreator", fields: [created_by], references: [id])
+
+  // Indices and Map
+  @@unique([user_id, role_id])
+  @@index([role_id])
+  @@index([user_id])
+  @@index([created_by])
+  @@map("user_roles")
+}
+
+model Role {
+  // Primary Fields
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(255)
+  description String?  @db.VarChar(500)
+
+  // System & Metadata
+  active      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  modified_at DateTime? @updatedAt
+
+  // Foreign Keys (Inbound Relations)
+  created_by Int
+  createdBy  User @relation("RoleCreator", fields: [created_by], references: [id])
+  modified_by Int?
+  modifiedBy User? @relation("RoleModifier", fields: [modified_by], references: [id])
+
+  // Outbound Relations
+  users UserRole[] @relation("UserRoleRole")
+
+  // Indices and Map
+  @@index([created_by])
+  @@index([modified_by])
+  @@map("roles")
+}
+
+model UserFollow {
+  // Primary Fields
+  id Int @id @default(autoincrement())
+
+  // System & Metadata
+  active      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  modified_at DateTime? @updatedAt
+
+  // Foreign Keys (Inbound Relations)
+  follower_id Int
+  follower    User @relation("Follower", fields: [follower_id], references: [id])
+
+  followed_id Int
+  followed    User @relation("Followed", fields: [followed_id], references: [id])
+
+  // Indices and Map
+  @@index([follower_id])
+  @@index([followed_id])
+  @@map("user_follows")
+}
+
+model Project {
+  // Primary Fields
+  id             Int               @id @default(autoincrement())
+  title          String            @db.VarChar(255)
+  description    String?           @db.VarChar(500)
+  height         Float?
+  width          Float?
+  price          Float?
+  projectStatus  ProjectStatusEnum @default(DRAFT)
+  gender         GenderEnum?
+
+  // System & Metadata
+  active      Boolean   @default(true)
+  created_at  DateTime  @default(now())
+  modified_at DateTime? @updatedAt
+
+  // Foreign Keys (Inbound Relations)
+  body_part_id Int?
+  bodyPart     BodyPart? @relation(fields: [body_part_id], references: [id])
+
+  tattoo_style_id Int?
+  tattooStyle     TattooStyle? @relation(fields: [tattoo_style_id], references: [id])
+
+  created_by Int
+  createdBy  User @relation("ProjectCreator", fields: [created_by], references: [id])
+  modified_by Int?
+  modifiedBy User? @relation("ProjectModifier", fields: [modified_by], references: [id])
+
+  // Outbound Relations
+  oldChangeRequests ReservationChangeRequest[] @relation("OldProjectChangeRequest")
+  newChangeRequests ReservationChangeRequest[] @relation("NewProjectChangeRequest")
+  scheduleOffers    ScheduleOffer[]
+  finalReservations Reservation[]
+
+  // Indices and Map
+  @@index([body_part_id])
+  @@index([tattoo_style_id])
+  @@index([created_by])
+  @@index([modified_by])
+  @@map("projects")
+}
+
+model BodyPart {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.VarChar(255)
+
+  active      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  modified_at DateTime? @updatedAt
+
+  body_part_category_id Int
+  bodyPartCategory     BodyPartCategory @relation(fields: [body_part_category_id], references: [id])
+
+  created_by Int
+  createdBy  User @relation("BodyPartCreator", fields: [created_by], references: [id])
+  modified_by Int
+  modifiedBy User @relation("BodyPartModifier", fields: [modified_by], references: [id])
+
+  projects Project[]
+
+  @@index([created_by])
+  @@index([modified_by])
+  @@map("body_parts")
+}
+
+model BodyPartCategory {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique @db.VarChar(100)
+  active      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  modified_at DateTime? @updatedAt
+
+  created_by Int
+  createdBy  User @relation("BodyPartCategoryCreator", fields: [created_by], references: [id])
+  modified_by Int
+  modifiedBy User @relation("BodyPartCategoryModifier", fields: [modified_by], references: [id])
+
+  bodyParts BodyPart[]
+
+  @@index([name])
+  @@index([created_by])
+  @@index([modified_by])
+  @@map("body_part_categories")
+}
+
+model TattooStyle {
+  // Primary Fields
+  id          Int      @id @default(autoincrement())
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.VarChar(255)
+
+  // System & Metadata
+  active      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  modified_at DateTime? @updatedAt
+
+  // Foreign Keys (Inbound Relations)
+  created_by Int
+  createdBy  User @relation("TattooStyleCreator", fields: [created_by], references: [id])
+  modified_by Int?
+  modifiedBy User? @relation("TattooStyleModifier", fields: [modified_by], references: [id])
+
+  // Outbound Relations
+  projects Project[]
+
+  // Indices and Map
+  @@index([created_by])
+  @@index([modified_by])
+  @@map("tattoo_styles")
+}
+
+model News {
+  // Primary Fields
+  id         Int      @id @default(autoincrement())
+  title      String   @db.VarChar(255)
+  content    String   @db.Text
+  published_at DateTime?
+
+  // System & Metadata
+  active              Boolean  @default(true)
+  is_for_artists_only Boolean  @default(false)
+  is_for_staff_only   Boolean  @default(false)
+  is_for_members_only Boolean  @default(false)
+  created_at          DateTime @default(now())
+  modified_at         DateTime? @updatedAt
+
+  // Foreign Keys (Inbound Relations)
+  created_by Int
+  createdBy  User @relation("NewsCreator", fields: [created_by], references: [id])
+  modified_by Int?
+  modifiedBy User? @relation("NewsModifier", fields: [modified_by], references: [id])
+
+  // Indices and Map
+  @@index([created_by])
+  @@index([modified_by])
+  @@map("news")
+}
+
+model Comment {
+  // Primary Fields
+  id      Int      @id @default(autoincrement())
+  comment String   @db.Text
+  generic_id Int
+
+  // System & Metadata
+  active      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  modified_at DateTime? @updatedAt
+
+  // Foreign Keys (Inbound Relations)
+  content_type_id Int
+  contentType     ContentType @relation(fields: [content_type_id], references: [id])
+
+  created_by Int
+  createdBy  User @relation("CommentCreator", fields: [created_by], references: [id])
+  modified_by Int?
+  modifiedBy User? @relation("CommentModifier", fields: [modified_by], references: [id])
+
+  // Indices and Map
+  @@index([created_by])
+  @@index([modified_by])
+  @@index([content_type_id, generic_id])
+  @@map("comments")
+}
+
+model ContentType {
+  // Primary Fields
+  id   Int    @id @default(autoincrement())
+  name String @db.VarChar(100) @unique
+
+  // Outbound Relations
+  comments   Comment[]
+  likes      Like[]
+  mediaFiles MediaFile[]
+
+  @@map("content_types")
+}
+
+model Notification {
+  // Primary Fields
+  id          Int      @id @default(autoincrement())
+  title       String   @db.VarChar(255)
+  description String   @db.Text
+  link_url    String?  @db.VarChar(500)
+
+  // System & Metadata
+  created_at DateTime @default(now())
+
+  // Outbound Relations
+  userNotifications UserNotification[]
+
+  @@map("notifications")
+}
+
+model UserNotification {
+  // Primary Fields
+  id Int @id @default(autoincrement())
+
+  // System & Metadata
+  seen      Boolean   @default(false)
+  seen_at   DateTime?
+  created_at DateTime @default(now())
+
+  // Foreign Keys (Inbound Relations)
+  user_id Int
+  user    User @relation(fields: [user_id], references: [id])
+
+  notification_id Int
+  notification    Notification @relation(fields: [notification_id], references: [id])
+
+  // Indices and Map
+  @@unique([user_id, notification_id])
+  @@index([user_id])
+  @@map("user_notifications")
+}
+
+model Like {
+  // Primary Fields
+  id         Int      @id @default(autoincrement())
+  generic_id Int
+
+  // System & Metadata
+  active     Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  // Foreign Keys (Inbound Relations)
+  content_type_id Int
+  contentType     ContentType @relation(fields: [content_type_id], references: [id])
+
+  user_id Int
+  user    User @relation(fields: [user_id], references: [id])
+
+  // Indices and Map
+  @@index([content_type_id, generic_id])
+  @@unique([user_id, content_type_id, generic_id])
+  @@map("likes")
+}
+
+model MediaFile {
+  // Primary Fields
+  id              Int      @id @default(autoincrement())
+  title           String?  @db.VarChar(255)
+  description     String?  @db.VarChar(500)
+  position        Int?
+  pinned          Boolean  @default(false)
+  file_url        String   @db.VarChar(500)
+  file_type       String   @db.VarChar(100)
+  generic_id      Int
+
+  // System & Metadata
+  active          Boolean  @default(true)
+  created_at      DateTime @default(now())
+  modified_at     DateTime? @updatedAt
+
+  // Foreign Keys (Inbound Relations)
+  content_type_id Int
+  contentType     ContentType @relation(fields: [content_type_id], references: [id])
+
+  created_by Int
+  createdBy  User @relation("MediaFileCreator", fields: [created_by], references: [id])
+  modified_by Int?
+  modifiedBy User? @relation("MediaFileModifier", fields: [modified_by], references: [id])
+
+  // Indices and Map
+  @@index([created_by])
+  @@index([modified_by])
+  @@index([content_type_id, generic_id])
+  @@map("media_files")
+}
+
+model TattooArtistSchedule {
+  // Primary Fields
+  id         Int      @id @default(autoincrement())
+  start_date DateTime
+  end_date   DateTime
+
+  // System & Metadata
+  active     Boolean  @default(true)
+  available  Boolean  @default(true)
+  created_at DateTime @default(now())
+  modified_at DateTime? @updatedAt
+
+  // Foreign Keys (Inbound Relations)
+  created_by Int
+  createdBy  User @relation("TattooArtistScheduleCreator", fields: [created_by], references: [id])
+  modified_by Int?
+  modifiedBy User? @relation("TattooArtistScheduleModifier", fields: [modified_by], references: [id])
+
+  // Outbound Relations
+  scheduleOffers ScheduleOffer[]
+  reservations   Reservation[]
+
+  // Indices and Map
+  @@index([created_by])
+  @@index([modified_by])
+  @@map("tattoo_artist_schedules")
+}
+
+model ScheduleOffer {
+  // Primary Fields
+  id            Int               @id @default(autoincrement())
+  scheduleOfferStatus ScheduleOfferStatus @default(PENDING)
+  proposed_start_date DateTime?
+  proposed_end_date   DateTime?
+  description       String?           @db.VarChar(2000)
+  proposed_price    Float?
+
+  // System & Metadata
+  active            Boolean   @default(true)
+  has_change_requests Boolean   @default(false)
+  created_at        DateTime  @default(now())
+  modified_at       DateTime? @updatedAt
+
+  // Foreign Keys (Inbound Relations)
+  tattoo_artist_schedule_id Int
+  tattooArtistSchedule      TattooArtistSchedule @relation(fields: [tattoo_artist_schedule_id], references: [id])
+
+  requested_by Int
+  requestedBy  User @relation("RequestedBySchedule", fields: [requested_by], references: [id])
+
+  requested_to Int
+  requestedTo  User @relation("RequestedToSchedule", fields: [requested_to], references: [id])
+
+  project_id Int
+  project    Project @relation(fields: [project_id], references: [id])
+
+  created_by Int
+  createdBy  User @relation("ScheduleOfferCreator", fields: [created_by], references: [id])
+  modified_by Int?
+  modifiedBy User? @relation("ScheduleOfferModifier", fields: [modified_by], references: [id])
+
+  // Outbound Relations
+  reservationChangeRequests ReservationChangeRequest[]
+
+  // Indices and Map
+  @@index([created_by])
+  @@index([modified_by])
+  @@unique([tattoo_artist_schedule_id, requested_by])
+  @@map("schedule_offers")
+}
+
+model ReservationChangeRequest {
+  // Primary Fields
+  id            Int      @id @default(autoincrement())
+  old_start_date DateTime
+  old_end_date   DateTime
+  new_start_date DateTime?
+  new_end_date   DateTime?
+  old_price      Float
+  new_price      Float?
+  reason         String?  @db.VarChar(2000)
+  reservationChangeREquestStatus ReservationChangeRequestStatus @default(PENDING)
+
+  // System & Metadata
+  created_at DateTime @default(now())
+  modified_at DateTime? @updatedAt
+
+  // Foreign Keys (Inbound Relations)
+  original_reservation_change_request_id Int?
+  originalReservationChangeRequest ReservationChangeRequest? @relation("OriginalReservationChangeRequest", fields: [original_reservation_change_request_id], references: [id])
+
+  schedule_offer_id Int
+  scheduleOffer     ScheduleOffer @relation(fields: [schedule_offer_id], references: [id])
+
+  requested_by Int
+  requestedBy  User @relation("ChangeRequestRequestedBy", fields: [requested_by], references: [id])
+
+  requested_to Int
+  requestedTo  User @relation("ChangeRequestRequestedTo", fields: [requested_to], references: [id])
+
+  old_project_id Int
+  oldProject     Project @relation("OldProjectChangeRequest", fields: [old_project_id], references: [id])
+
+  new_project_id Int?
+  newProject     Project? @relation("NewProjectChangeRequest", fields: [new_project_id], references: [id])
+
+  created_by Int
+  createdBy  User @relation("ReservationChangeRequestCreator", fields: [created_by], references: [id])
+  modified_by Int?
+  modifiedBy User? @relation("ReservationChangeRequestModifier", fields: [modified_by], references: [id])
+
+  // Outbound Relations (Self-Relation)
+  relatedReservationChangeRequests ReservationChangeRequest[] @relation("OriginalReservationChangeRequest")
+
+  // Indices and Map
+  @@index([requested_by])
+  @@index([created_by])
+  @@index([modified_by])
+  @@map("reservation_change_requests")
+}
+
+model Reservation {
+  // Primary Fields
+  id           Int      @id @default(autoincrement())
+  final_date   DateTime
+  final_price  Float
+
+  // System & Metadata
+  created_at   DateTime @default(now())
+
+  // Foreign Keys (Inbound Relations)
+  schedule_offer_id Int
+  scheduleOffer     TattooArtistSchedule @relation(fields: [schedule_offer_id], references: [id])
+
+  artist_id Int
+  artist    User @relation("ReservedArtist", fields: [artist_id], references: [id])
+
+  reserved_by Int
+  reservedBy  User @relation("ReservedByUser", fields: [reserved_by], references: [id])
+
+  final_project_id Int
+  finalProject     Project @relation(fields: [final_project_id], references: [id])
+
+  reservation_status_id Int
+  reservationStatus     ReservationStatus @relation(fields: [reservation_status_id], references: [id])
+
+  created_by Int
+  createdBy  User @relation("ReservationCreator", fields: [created_by], references: [id])
+
+  // Indices and Map
+  @@index([created_by])
+  @@index([artist_id])
+  @@unique([schedule_offer_id, reserved_by])
+  @@map("reservations")
+}
+
+model ReservationStatus {
+  // Primary Fields
+  id    Int    @id @default(autoincrement())
+  name  String @db.VarChar(100)
+
+  // System & Metadata
+  active Boolean @default(true)
+  created_at DateTime @default(now())
+
+  // Outbound Relations
+  reservations Reservation[]
+
+  @@map("reservation_statuses")
+}

@@ -1,0 +1,58 @@
+[
+    {
+        "name": "Tradicional",
+        "description": "Estilo clásico con líneas gruesas, colores sólidos y diseños icónicos como anclas, rosas, dagas y corazones. Prioriza la durabilidad y la legibilidad con el paso del tiempo."
+    },
+    {
+        "name": "Neotradicional",
+        "description": "Evolución del estilo tradicional, mantiene líneas definidas pero incorpora mayor detalle, paletas de color más amplias y composiciones más complejas."
+    },
+    {
+        "name": "Realista",
+        "description": "Busca reproducir imágenes con alto nivel de detalle y proporciones reales, como retratos, animales u objetos, utilizando sombras y degradados precisos."
+    },
+    {
+        "name": "Blackwork",
+        "description": "Se caracteriza por el uso exclusivo de tinta negra, con grandes áreas sólidas, patrones geométricos o diseños de alto contraste."
+    },
+    {
+        "name": "Linework",
+        "description": "Basado principalmente en líneas limpias y definidas, con poco o ningún sombreado. Destaca por su estética minimalista y clara."
+    },
+    {
+        "name": "Minimalista",
+        "description": "Diseños simples, pequeños y discretos, con pocos elementos y trazos finos. Enfocado en la sutileza y el significado personal."
+    },
+    {
+        "name": "Acuarela",
+        "description": "Imita el efecto de la pintura en acuarela, con colores difuminados, salpicaduras y ausencia de contornos marcados."
+    },
+    {
+        "name": "Geométrico",
+        "description": "Utiliza formas geométricas como líneas, círculos y polígonos para crear diseños simétricos o abstractos, a menudo con un enfoque moderno."
+    },
+    {
+        "name": "Dotwork",
+        "description": "Construye las imágenes mediante puntos en lugar de líneas continuas, generando sombras y texturas a partir de la densidad de los puntos."
+    },
+    {
+        "name": "Japones",
+        "description": "Estilo tradicional japonés con composiciones grandes y narrativas, incluyendo dragones, carpas koi, flores y elementos mitológicos."
+    },
+    {
+        "name": "Tribal",
+        "description": "Inspirado en patrones ancestrales de distintas culturas, con líneas negras gruesas y formas repetitivas que siguen la anatomía del cuerpo."
+    },
+    {
+        "name": "Old School",
+        "description": "Variante del estilo tradicional americano, con colores limitados, contornos gruesos y motivos clásicos del tatuaje marítimo."
+    },
+    {
+        "name": "New School",
+        "description": "Estilo colorido y exagerado, con influencias del cómic y la ilustración, personajes caricaturescos y proporciones no realistas."
+    },
+    {
+        "name": "Ilustrativo",
+        "description": "Combina técnicas de dibujo e ilustración, permitiendo estilos libres que pueden parecer bocetos, grabados o dibujos a mano."
+    }
+]
