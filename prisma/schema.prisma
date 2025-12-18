@@ -53,7 +53,7 @@ model User {
   birthday_date  DateTime?
   is_minor       Boolean?
   avatar_url     String?     @db.VarChar(500)
-  gender         GenderEnum?
+  gender         GenderEnum
 
   // Membership & Social
   instagram_url         String?   @db.VarChar(500)
@@ -72,10 +72,10 @@ model User {
   user_type_id Int
   userType     UserType @relation(fields: [user_type_id], references: [id])
 
-  created_by Int
-  createdBy  User     @relation("UserCreator", fields: [created_by], references: [id])
-  modified_by Int
-  modifiedBy User     @relation("UserModifier", fields: [modified_by], references: [id])
+  created_by Int? @default(1)
+  createdBy  User?     @relation("UserCreator", fields: [created_by], references: [id])
+  modified_by Int? @default(1)
+  modifiedBy User?     @relation("UserModifier", fields: [modified_by], references: [id])
 
   // Outbound Relations (Self-Relations)
   createdUsers  User[] @relation("UserCreator")

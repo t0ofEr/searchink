@@ -1,15 +1,22 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, UseFilters, HttpStatus } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { User } from 'generated/prisma/client';
+import { HttpExceptionFilter } from 'src/common/exceptions/http-exception.filter';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
-  @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+  @Post('register')
+  registerLocal(@Body() createUserDto: CreateUserDto) {
+    const user = this.usersService.register(createUserDto);
+    return {
+      data: user,
+      message: 'Usuario registrado exitosamente',
+      status: HttpStatus.CREATED,
+    }
   }
 
   @Get()
@@ -18,8 +25,13 @@ export class UsersController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
+  async findOne(@Param('id', ParseIntPipe) id: number) {
+    const user = await this.usersService.findOne(id);
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Usuario econtrado exitosamente',
+      data: user,
+    };
   }
 
   @Patch(':id')
@@ -28,7 +40,12 @@ export class UsersController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(+id);
+  async remove(@Param('id', ParseIntPipe) id: number) {
+    const user = await this.usersService.remove(id); 
+    return {
+      data: user,
+      message: 'Usuario eliminado exitosamente',
+      status: HttpStatus.OK,
+    }
   }
 }
