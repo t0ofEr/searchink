@@ -1,15 +1,16 @@
 import { USER_TYPE_SUPER_ADMIN_INDEX, SUPER_ADMIN_INDEX, USER_TYPE_SUPER_ADMIN_NAME } from "src/common/constants/user.constants";
 import { AuthProvider, GenderEnum, PrismaClient } from "../../generated/prisma/client";
 import * as bcrypt from 'bcrypt';
+import { envs } from "src/config/envs";
 
 const prisma = new PrismaClient();
 
 export async function seedUsers() {
     const saltOrRounds = 10;
-    const password = 'Superadmin123';
-    const hashedPassword = await bcrypt.hash(password, saltOrRounds);
+    const hashedPassword = await bcrypt.hash(envs.superAdminPass, saltOrRounds);
+    const email = envs.superAdmimEmail;
     const birthdayDate = new Date("1997-11-28");
-    const email = "t0ofer97@gmail.com";
+
     console.log("Adding Super Administrator...");
     const superAdmin = await prisma.user.upsert({
         where: { id: USER_TYPE_SUPER_ADMIN_INDEX },
