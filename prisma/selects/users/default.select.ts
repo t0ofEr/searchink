@@ -1,0 +1,24 @@
+import { Prisma } from '../../../generated/prisma/client';
+
+export const USER_PUBLIC_SELECT = {
+    username: true,
+    name: true,
+    lastname: true,
+    email: true,
+    phone_number: true,
+    birthday_date: true,
+    is_minor: true,
+    avatar_url: true,
+    gender: true,
+    instagram_url: true,
+    facebook_url: true,
+    twitter_url: true,
+    has_membership: true,
+    user_type_id: true,
+    active: true,
+} satisfies Prisma.UserSelect;
+
+export const USER_PUBLIC_SELECT_WITH_ID = {
+    id: true,
+    ...USER_PUBLIC_SELECT
+} satisfies Prisma.UserSelect;

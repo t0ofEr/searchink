@@ -6,6 +6,7 @@ interface EnvVars {
     DATABASE_URL: string;
     SUPER_ADMINISTRATOR_PASS: string;
     SUPER_ADMINISTRATOR_EMAIL: string;
+    JWT_SECRET_PASSWORD: string;
 }
 
 const envsSchema = joi.object({
@@ -13,6 +14,7 @@ const envsSchema = joi.object({
     DATABASE_URL: joi.string().required(),
     SUPER_ADMINISTRATOR_PASS: joi.string().required(),
     SUPER_ADMINISTRATOR_EMAIL: joi.string().required(),
+    JWT_SECRET_PASSWORD: joi.string().required(),
 })
 .unknown(true);
 
@@ -29,4 +31,5 @@ export const envs = {
     dbUrl: envVars.DATABASE_URL,
     superAdminPass: envVars.SUPER_ADMINISTRATOR_PASS,
     superAdmimEmail: envVars.SUPER_ADMINISTRATOR_EMAIL,
+    jwtSecret: envVars.JWT_SECRET_PASSWORD,
 }

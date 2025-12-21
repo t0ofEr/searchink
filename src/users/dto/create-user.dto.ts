@@ -9,6 +9,7 @@ import {
     IsDateString,
     IsEnum,
     IsUrl,
+    IsStrongPassword,
 } from 'class-validator';
 import { GenderEnum } from 'generated/prisma/enums';
 import { PublicUserType } from '../enums/public-user-type.enum';
@@ -32,13 +33,14 @@ export class CreateUserDto {
     @MaxLength(100)
     lastname?: string;
 
+    
+    @IsNotEmpty({ message: 'Correo es obligatorio'})
     @IsEmail({}, { message: 'Debe ingresar un correo válido' })
     @MaxLength(150, { message: 'El correo no debe exceder los 150 caracteres' })
     email: string;
 
     @IsString({ message: 'La contraseña debe ser texto' })
-    @MinLength(8, { message: 'La contraseña debe tener al menos 8 caracteres' })
-    @MaxLength(64, { message: 'La contraseña no debe exceder los 64 caracteres' })
+    @IsStrongPassword({}, {message: 'La contraseña no es lo suficientemente segura'})
     password: string;
 
     @IsString({ message: 'Confirmación de contraseña debe ser texto' })

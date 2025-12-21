@@ -2,10 +2,13 @@ import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { AuthProvider, User } from 'generated/prisma/client';
+import { AuthProvider } from 'generated/prisma/client';
 import { isMinor } from 'src/utils/minor-age-validator.util';
 import { mapPublicUserTypeToId } from './domain/user-type.domain';
 import * as bcrypt from 'bcrypt';
+import { USER_TYPE_SUPER_ADMIN_INDEX } from 'src/common/constants/user.constants';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { USER_PUBLIC_SELECT, USER_PUBLIC_SELECT_WITH_ID } from 'prisma/selects/users/default.select';
 
 @Injectable()
 export class UsersService {
@@ -44,79 +47,101 @@ export class UsersService {
           created_by: user.id,
           modified_by: user.id,
         },
-        select: {
-          username: true,
-          email: true,
-          name: true,
-          lastname: true,
-          avatar_url: true,
-          gender: true,
-          is_minor: true,
-        },
+        select: USER_PUBLIC_SELECT_WITH_ID
       });
     });
   }
 
-
-
-  findAll() {
-    return `This action returns all users`;
+  async findAll(paginationDto: PaginationDto) {
+    const { page = 1, limit = 10 } = paginationDto;
+    const skip = (page - 1) * limit;
+    const totalUsers = await this.prisma.user.count({ where: { active: true, user_type_id: { not: USER_TYPE_SUPER_ADMIN_INDEX } } });
+    const lastPage = Math.ceil(totalUsers / limit);
+    return {
+      data: await this.prisma.user.findMany({
+        skip,
+        take: limit,
+        where: {
+          active: true,
+          user_type_id: {
+            not: USER_TYPE_SUPER_ADMIN_INDEX
+          }
+        },
+        select: USER_PUBLIC_SELECT,
+      }),
+      meta: {
+        total: totalUsers,
+        page: page,
+        lastpage: lastPage,
+      }
+    }
   }
 
   async findOne(id: number) {
     const user = await this.prisma.user.findUnique({
-      where: { id, active: true},
-      select: {
-        username: true,
-        email: true,
-        name: true,
-        lastname: true,
-        avatar_url: true,
-        gender: true,
-        is_minor: true,
-        birthday_date: true,
-        instagram_url: true,
-        twitter_url: true,
-        facebook_url: true,
-        has_membership: true,
-        user_type_id: true,
+      where: {
+        id,
         active: true,
+        user_type_id: {
+          not: USER_TYPE_SUPER_ADMIN_INDEX,
+        },
       },
+      select: USER_PUBLIC_SELECT,
     });
+
     if (!user) {
       throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
     }
+
     return user;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async update(id: number, updateUserDto: UpdateUserDto) {
+    await this.findOne(id);
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: id },
+      data: updateUserDto,
+      select: USER_PUBLIC_SELECT
+    });
+
+    return updatedUser;
   }
 
   async remove(id: number) {
     await this.findOne(id);
-    
+
     return await this.prisma.user.update({
-      select: {
-        username: true,
-        email: true,
-        name: true,
-        lastname: true,
-        avatar_url: true,
-        gender: true,
-        is_minor: true,
-        birthday_date: true,
-        instagram_url: true,
-        twitter_url: true,
-        facebook_url: true,
-        has_membership: true,
-        user_type_id: true,
-        active: true,
-      },
+      select: USER_PUBLIC_SELECT,
       where: { id },
       data: {
         active: false
       }
     });
+  }
+
+  async getUserByEmail(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      select: USER_PUBLIC_SELECT_WITH_ID,
+    });
+
+    if (!user) {
+      throw new NotFoundException(`Usuario no encontrado`);
+    }
+
+    const userAuth = await this.prisma.authIdentity.findUnique({
+      where: {
+        provider_provider_id: {
+          provider: AuthProvider.LOCAL,
+          provider_id: user.email,
+        },
+      }
+    });
+
+    return {
+      ...user, 
+      password: userAuth?.password
+    }
   }
 }
