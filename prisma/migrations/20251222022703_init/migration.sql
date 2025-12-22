@@ -494,6 +494,9 @@ CREATE INDEX "user_follows_follower_id_idx" ON "user_follows"("follower_id");
 CREATE INDEX "user_follows_followed_id_idx" ON "user_follows"("followed_id");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "user_follows_follower_id_followed_id_key" ON "user_follows"("follower_id", "followed_id");
+
+-- CreateIndex
 CREATE INDEX "projects_body_part_id_idx" ON "projects"("body_part_id");
 
 -- CreateIndex

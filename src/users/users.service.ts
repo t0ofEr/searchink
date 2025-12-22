@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -9,10 +9,23 @@ import * as bcrypt from 'bcrypt';
 import { USER_TYPE_SUPER_ADMIN_INDEX } from 'src/common/constants/user.constants';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { USER_PUBLIC_SELECT, USER_PUBLIC_SELECT_WITH_ID } from 'prisma/selects/users/default.select';
+import { FollowUserDto } from './dto/follow-user.dto';
+import { UnfollowUserDto } from './dto/unfollow-user.dto';
 
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) { }
+
+  private assertNotSameUser(
+    actorId: number,
+    targetId: number,
+    message = 'La acción no es válida sobre el mismo usuario',
+  ): void {
+    if (actorId === targetId) {
+      throw new BadRequestException(message);
+    }
+  }
+
 
   async register(dto: CreateUserDto) {
     const {
@@ -78,7 +91,7 @@ export class UsersService {
   }
 
   async findOne(id: number) {
-    const user = await this.prisma.user.findUnique({
+    const user = await this.prisma.user.findFirst({
       where: {
         id,
         active: true,
@@ -140,8 +153,65 @@ export class UsersService {
     });
 
     return {
-      ...user, 
+      ...user,
       password: userAuth?.password
     }
+  }
+
+  async assertUsersActive(ids: number[]): Promise<void> {
+    const count = await this.prisma.user.count({
+      where: {
+        id: { in: ids },
+        active: true,
+        user_type_id: {
+          not: USER_TYPE_SUPER_ADMIN_INDEX,
+        }
+      },
+    });
+
+    if (count !== ids.length) {
+      throw new NotFoundException('Uno o más usuarios no existen o están inactivos');
+    }
+  }
+
+  async followUser(followUserDto: FollowUserDto) {
+
+    const { follower_id, followed_id } = followUserDto;
+
+    this.assertNotSameUser(
+      follower_id,
+      followed_id,
+      'No puedes seguirte a ti mismo',
+    );
+
+    await this.assertUsersActive([follower_id, followed_id]);
+
+    return this.prisma.userFollow.upsert({
+      where: {
+        follower_id_followed_id: {
+          follower_id,
+          followed_id
+        }
+      },
+      update: {
+        active: true,
+      },
+      create: {
+        follower_id,
+        followed_id,
+        active: true,
+      },
+    });
+  }
+
+  async unfollowUser(unfollowUserDto: UnfollowUserDto) {
+    return this.prisma.userFollow.update({
+      where: {
+        follower_id_followed_id: unfollowUserDto,
+      },
+      data: {
+        active: false,
+      }
+    })
   }
 }

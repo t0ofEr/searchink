@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, HttpStatus, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, HttpStatus, Query, UseGuards, Request } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -51,22 +51,47 @@ export class UsersController {
 
   @UseGuards(AuthGuard, SelfOrAdminGuard)
   @Patch(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() updateUserDto: UpdateUserDto) {
+  async update(@Param('id', ParseIntPipe) id: number, @Body() updateUserDto: UpdateUserDto) {
     return { 
-      data: this.usersService.update(id, updateUserDto),
+      data: await this.usersService.update(id, updateUserDto),
       statusCode: HttpStatus.OK,
       status: SUCCESS_MESSAGE,
     };
   }
 
-  @UserTypes([USER_TYPE_ADMIN_INDEX, USER_TYPE_SUPER_ADMIN_INDEX])
-  @UseGuards(AuthGuard, UserTypesGuard)
+  @UseGuards(AuthGuard, SelfOrAdminGuard)
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number) {
     const user = await this.usersService.remove(id);
     return {
       data: user,
       message: 'Usuario eliminado exitosamente',
+      statusCode: HttpStatus.OK,
+      status: SUCCESS_MESSAGE,
+    }
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('/follow/:id')
+  async followUser(@Param('id', ParseIntPipe) followedId: number, @Request() req) {
+    return {
+      data: await this.usersService.followUser({
+        followed_id: followedId,
+        follower_id: req.user.id,
+      }),
+      statusCode: HttpStatus.OK,
+      status: SUCCESS_MESSAGE,
+    }
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('/unfollow/:id')
+  async unfollowUser(@Param('id', ParseIntPipe) followedId: number, @Request() req) {
+    return {
+      data: await this.usersService.unfollowUser({
+        followed_id: followedId,
+        follower_id: req.user.id,
+      }),
       statusCode: HttpStatus.OK,
       status: SUCCESS_MESSAGE,
     }

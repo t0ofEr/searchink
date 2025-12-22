@@ -349,6 +349,7 @@ model UserFollow {
   // Indices and Map
   @@index([follower_id])
   @@index([followed_id])
+  @@unique([follower_id, followed_id])
   @@map("user_follows")
 }
 
