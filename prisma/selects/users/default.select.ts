@@ -2,7 +2,7 @@ import { Prisma } from '../../../generated/prisma/client';
 
 export const USER_PUBLIC_SELECT = {
     username: true,
-    name: true,
+    firstname: true,
     lastname: true,
     email: true,
     phone_number: true,
@@ -21,4 +21,14 @@ export const USER_PUBLIC_SELECT = {
 export const USER_PUBLIC_SELECT_WITH_ID = {
     id: true,
     ...USER_PUBLIC_SELECT
+} satisfies Prisma.UserSelect;
+
+export const USER_SESSION_SELECT = {
+    id: true,
+    username: true,
+    email: true,
+    roles: true,
+    user_type_id: true,
+    active: true,
+    has_membership: true,
 } satisfies Prisma.UserSelect;

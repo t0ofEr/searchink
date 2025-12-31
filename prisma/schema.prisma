@@ -46,14 +46,14 @@ model User {
   // Primary Fields
   id             Int         @id @default(autoincrement())
   username       String      @unique
-  name           String?     @db.VarChar(100)
+  firstname      String?     @db.VarChar(100)
   lastname       String?     @db.VarChar(100)
   email          String      @unique @db.VarChar(150)
   phone_number   String?     @db.VarChar(20)
   birthday_date  DateTime?
   is_minor       Boolean?
   avatar_url     String?     @db.VarChar(500)
-  gender         GenderEnum
+  gender         GenderEnum?
 
   // Membership & Social
   instagram_url         String?   @db.VarChar(500)
@@ -69,8 +69,10 @@ model User {
   modified_at DateTime @updatedAt
 
   // Foreign Keys (Inbound Relations)
-  user_type_id Int
-  userType     UserType @relation(fields: [user_type_id], references: [id])
+  user_type_id Int?
+  userType     UserType? @relation(fields: [user_type_id], references: [id])
+
+  profile_status ProfileStatus  @default(INCOMPLETE)
 
   created_by Int? @default(1)
   createdBy  User?     @relation("UserCreator", fields: [created_by], references: [id])
@@ -153,6 +155,10 @@ enum AuthProvider {
   GOOGLE
 }
 
+enum ProfileStatus {
+  INCOMPLETE
+  COMPLETE
+}
 model ParentalConsent {
   id                Int      @id @default(autoincrement())
   user_id           Int      @unique

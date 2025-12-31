@@ -1,22 +1,27 @@
-
 import { Module } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { UsersModule } from '../users/users.module';
 import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule } from '@nestjs/config';
+import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { envs } from 'src/config/envs';
+import { JwtStrategy } from './strategies/jwt.strategy';
+import { UsersModule } from '../users/users.module';
+import googleOauthConfig from 'src/config/google-oauth.config';
+import { PassportModule } from '@nestjs/passport';
+import jwtConfig from 'src/config/jwt.config';
+import cacheConfig from 'src/config/cache.config';
+import { GoogleStrategy } from './strategies/google.strategy';
 
 @Module({
   imports: [
+    ConfigModule.forFeature(googleOauthConfig),
+    ConfigModule.forFeature(jwtConfig),
+    ConfigModule.forFeature(cacheConfig),
     UsersModule,
-    JwtModule.register({
-      global: true,
-      secret: envs.jwtSecret,
-      signOptions: { expiresIn: '2h' },
-    }),
+    PassportModule,
+    JwtModule.registerAsync(jwtConfig.asProvider()),
   ],
-  providers: [AuthService],
+  providers: [AuthService, JwtStrategy, GoogleStrategy],
   controllers: [AuthController],
   exports: [AuthService],
 })
-export class AuthModule {}
+export class AuthModule { }

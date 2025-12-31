@@ -1,4 +1,4 @@
-import { BadRequestException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -8,9 +8,13 @@ import { mapPublicUserTypeToId } from './domain/user-type.domain';
 import * as bcrypt from 'bcrypt';
 import { USER_TYPE_SUPER_ADMIN_INDEX } from 'src/common/constants/user.constants';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
-import { USER_PUBLIC_SELECT, USER_PUBLIC_SELECT_WITH_ID } from 'prisma/selects/users/default.select';
+import { USER_PUBLIC_SELECT, USER_PUBLIC_SELECT_WITH_ID, USER_SESSION_SELECT } from 'prisma/selects/users/default.select';
 import { FollowUserDto } from './dto/follow-user.dto';
 import { UnfollowUserDto } from './dto/unfollow-user.dto';
+import { GoogleUserDto } from 'src/auth/dto/google-user.dto';
+import { generateUsername } from './utils/username.util';
+import { mergeIfEmpty, resolveProfileStatus } from './utils/profile.util';
+import { normalizeEmail } from './utils/email.util';
 
 @Injectable()
 export class UsersService {
@@ -27,34 +31,99 @@ export class UsersService {
   }
 
 
-  async register(dto: CreateUserDto) {
-    const {
-      confirm_password,
-      password,
-      user_type,
-      birthday_date,
-      ...userData
-    } = dto;
+  async localRegister(dto: CreateUserDto) {
+    const { password, confirm_password, user_type, birthday_date, email, ...rest } = dto;
+    const birthdayDate = new Date(birthday_date);
+    const normalizedEmail = normalizeEmail(email);
 
+    return this.prisma.$transaction(async (tx) => {
+      const existingUser = await tx.user.findUnique({
+        where: { email: normalizedEmail },
+      });
+
+      if (!existingUser) {
+        const user = await tx.user.create({
+          data: {
+            email: normalizedEmail,
+            birthday_date: birthdayDate,
+            is_minor: isMinor(birthdayDate),
+            user_type_id: mapPublicUserTypeToId(user_type),
+            ...rest,
+          },
+        });
+
+        await tx.authIdentity.create({
+          data: {
+            user_id: user.id,
+            provider: AuthProvider.LOCAL,
+            provider_id: normalizedEmail,
+            password: await bcrypt.hash(password, 10),
+          },
+        });
+
+        return tx.user.update({
+          where: { id: user.id },
+          data: {
+            profile_status: resolveProfileStatus(user),
+            created_by: user.id,
+            modified_by: user.id,
+          },
+          select: USER_PUBLIC_SELECT_WITH_ID,
+        });
+      }
+
+      await tx.authIdentity.create({
+        data: {
+          user_id: existingUser.id,
+          provider: AuthProvider.LOCAL,
+          provider_id: normalizedEmail,
+          password: await bcrypt.hash(password, 10),
+        },
+      });
+
+      const updateData = mergeIfEmpty(existingUser, {
+        birthday_date: birthdayDate,
+        is_minor: isMinor(birthdayDate),
+        user_type_id: mapPublicUserTypeToId(user_type),
+        ...rest
+      });
+
+      const updatedUser = await tx.user.update({
+        where: { id: existingUser.id },
+        data: updateData,
+      });
+
+      return tx.user.update({
+        where: { id: updatedUser.id },
+        data: {
+          profile_status: resolveProfileStatus(updatedUser),
+        },
+        select: USER_PUBLIC_SELECT_WITH_ID,
+      });
+    });
+  }
+
+
+  async googleRegister(googleUserDto: GoogleUserDto) {
+    const { sub, email, ...userData } = googleUserDto;
     return this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
+          email: normalizeEmail(email),
           ...userData,
-          user_type_id: mapPublicUserTypeToId(user_type),
-          is_minor: birthday_date ? isMinor(new Date(birthday_date)) : false,
+          username: await generateUsername(userData.firstname, tx),
         },
       });
 
       await tx.authIdentity.create({
         data: {
           user_id: user.id,
-          password: await bcrypt.hash(password, 10),
-          provider: AuthProvider.LOCAL,
-          provider_id: userData.email,
+          provider: AuthProvider.GOOGLE,
+          provider_id: sub,
         },
       });
 
-      return tx.user.update({
+      return await tx.user.update({
         where: { id: user.id },
         data: {
           created_by: user.id,
@@ -133,29 +202,48 @@ export class UsersService {
     });
   }
 
-  async getUserByEmail(email: string) {
+  async getUserByEmail(email: string, requiredUser = true) {
     const user = await this.prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizeEmail(email) },
       select: USER_PUBLIC_SELECT_WITH_ID,
     });
 
-    if (!user) {
+    if (!user && requiredUser) {
       throw new NotFoundException(`Usuario no encontrado`);
     }
 
+    return user;
+  }
+
+  async getUserAuthIdentity(provider: AuthProvider, provider_id: string) {
     const userAuth = await this.prisma.authIdentity.findUnique({
       where: {
         provider_provider_id: {
-          provider: AuthProvider.LOCAL,
-          provider_id: user.email,
+          provider,
+          provider_id,
         },
-      }
+      },
+      select: {
+        provider: true,
+        provider_id: true,
+        password: true,
+        user_id: true,
+        user: {
+          select: USER_PUBLIC_SELECT_WITH_ID
+        }
+      },
     });
+    return userAuth;
+  }
 
-    return {
-      ...user,
-      password: userAuth?.password
-    }
+  async linkAuthIdentity(userId: number, provider: AuthProvider, providerId: string) {
+    return this.prisma.authIdentity.create({
+      data: {
+        user_id: userId,
+        provider: provider,
+        provider_id: providerId,
+      },
+    });
   }
 
   async assertUsersActive(ids: number[]): Promise<void> {
@@ -213,5 +301,18 @@ export class UsersService {
         active: false,
       }
     })
+  }
+
+  async findOneForSession(id: number) {
+    const user = await this.prisma.user.findFirst({
+      where: { id, active: true },
+      select: USER_SESSION_SELECT,
+    });
+
+    if (!user) {
+      throw new NotFoundException(`Usuario no encontrado`);
+    }
+
+    return user;
   }
 }

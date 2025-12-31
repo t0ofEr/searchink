@@ -13,18 +13,21 @@ CREATE TYPE "ReservationChangeRequestStatus" AS ENUM ('ACCEPTED', 'REJECTED', 'P
 -- CreateEnum
 CREATE TYPE "AuthProvider" AS ENUM ('LOCAL', 'GOOGLE');
 
+-- CreateEnum
+CREATE TYPE "ProfileStatus" AS ENUM ('INCOMPLETE', 'COMPLETE');
+
 -- CreateTable
 CREATE TABLE "users" (
     "id" SERIAL NOT NULL,
     "username" TEXT NOT NULL,
-    "name" VARCHAR(100),
+    "firstname" VARCHAR(100),
     "lastname" VARCHAR(100),
     "email" VARCHAR(150) NOT NULL,
     "phone_number" VARCHAR(20),
     "birthday_date" TIMESTAMP(3),
     "is_minor" BOOLEAN,
     "avatar_url" VARCHAR(500),
-    "gender" "GenderEnum" NOT NULL,
+    "gender" "GenderEnum",
     "instagram_url" VARCHAR(500),
     "facebook_url" VARCHAR(500),
     "twitter_url" VARCHAR(500),
@@ -34,7 +37,8 @@ CREATE TABLE "users" (
     "active" BOOLEAN NOT NULL DEFAULT true,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "modified_at" TIMESTAMP(3) NOT NULL,
-    "user_type_id" INTEGER NOT NULL,
+    "user_type_id" INTEGER,
+    "profile_status" "ProfileStatus" NOT NULL DEFAULT 'INCOMPLETE',
     "created_by" INTEGER DEFAULT 1,
     "modified_by" INTEGER DEFAULT 1,
 
@@ -611,7 +615,7 @@ CREATE INDEX "reservations_artist_id_idx" ON "reservations"("artist_id");
 CREATE UNIQUE INDEX "reservations_schedule_offer_id_reserved_by_key" ON "reservations"("schedule_offer_id", "reserved_by");
 
 -- AddForeignKey
-ALTER TABLE "users" ADD CONSTRAINT "users_user_type_id_fkey" FOREIGN KEY ("user_type_id") REFERENCES "user_types"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "users" ADD CONSTRAINT "users_user_type_id_fkey" FOREIGN KEY ("user_type_id") REFERENCES "user_types"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "users" ADD CONSTRAINT "users_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;

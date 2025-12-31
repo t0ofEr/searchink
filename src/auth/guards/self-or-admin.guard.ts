@@ -1,8 +1,5 @@
-
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { isAdmin, matchUserTypes } from 'src/users/domain/user-type.domain';
-
+import { isAdmin } from 'src/users/domain/user-type.domain';
 
 @Injectable()
 export class SelfOrAdminGuard implements CanActivate {

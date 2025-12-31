@@ -6,18 +6,18 @@ import {
     MinLength,
     MaxLength,
     Matches,
-    IsDateString,
     IsEnum,
     IsUrl,
     IsStrongPassword,
+    IsDate,
 } from 'class-validator';
 import { GenderEnum } from 'generated/prisma/enums';
 import { PublicUserType } from '../enums/public-user-type.enum';
 import { IsEqualTo } from '../validators/is-equal-to.validator';
+import { Type } from 'class-transformer';
 
 
 export class CreateUserDto {
-    @IsString({ message: 'El nombre de usuario debe ser texto' })
     @IsNotEmpty({ message: 'Nombre de usuario es obligatorio' })
     @MinLength(3, { message: 'El nombre de usuario debe tener al menos 3 caracteres' })
     @MaxLength(30, { message: 'El nombre de usuario no debe exceder los 30 caracteres' })
@@ -26,24 +26,22 @@ export class CreateUserDto {
     @IsOptional()
     @IsString({ message: 'El nombre debe ser texto' })
     @MaxLength(100)
-    name?: string;
+    firstname?: string;
 
     @IsOptional()
     @IsString({ message: 'El apellido debe ser texto' })
     @MaxLength(100)
     lastname?: string;
 
-    
-    @IsNotEmpty({ message: 'Correo es obligatorio'})
+    @IsNotEmpty({ message: 'Correo es obligatorio' })
     @IsEmail({}, { message: 'Debe ingresar un correo válido' })
     @MaxLength(150, { message: 'El correo no debe exceder los 150 caracteres' })
     email: string;
 
     @IsString({ message: 'La contraseña debe ser texto' })
-    @IsStrongPassword({}, {message: 'La contraseña no es lo suficientemente segura'})
+    @IsStrongPassword({}, { message: 'La contraseña no es lo suficientemente segura' })
     password: string;
 
-    @IsString({ message: 'Confirmación de contraseña debe ser texto' })
     @IsNotEmpty({ message: 'La confirmación de contraseña es obligatoria' })
     @IsEqualTo('password', {
         message: 'Las contraseñas no coinciden',
@@ -56,10 +54,11 @@ export class CreateUserDto {
     })
     phone_number?: string;
 
-    @IsOptional()
-    @IsDateString({}, { message: 'La fecha de nacimiento debe ser válida' })
-    birthday_date?: string;
+    @IsDate({ message: 'Debe ingresar una fecha de nacimiento válida' })
+    @Type(() => Date)
+    birthday_date: string;
 
+    @IsOptional()
     @IsEnum(GenderEnum, {
         message: 'El género seleccionado no es válido',
     })

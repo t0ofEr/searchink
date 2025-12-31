@@ -1,13 +1,20 @@
-import { createParamDecorator, ExecutionContext, InternalServerErrorException } from "@nestjs/common";
+import { createParamDecorator, ExecutionContext, InternalServerErrorException, UnauthorizedException } from "@nestjs/common";
 
 export const Token = createParamDecorator(
-    (data: unknown, ctx: ExecutionContext) => {    
+    (data: unknown, ctx: ExecutionContext) => {
         const request = ctx.switchToHttp().getRequest();
+        const authHeader = request.headers['authorization'];
 
-        if( !request.token ) {
-            throw new InternalServerErrorException('Token no encontrado');   
+        if (!authHeader) {
+            throw new UnauthorizedException('Authorization header no encontrado');
         }
 
-        return request.token;
+        const [type, token] = authHeader.split(' ');
+
+        if (type !== 'Bearer' || !token) {
+            throw new UnauthorizedException('Formato de token inválido');
+        }
+
+        return token;
     }
 );

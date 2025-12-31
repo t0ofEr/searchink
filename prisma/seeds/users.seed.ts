@@ -2,13 +2,14 @@ import { USER_TYPE_SUPER_ADMIN_INDEX, SUPER_ADMIN_INDEX, USER_TYPE_SUPER_ADMIN_N
 import { AuthProvider, GenderEnum, PrismaClient } from "../../generated/prisma/client";
 import * as bcrypt from 'bcrypt';
 import { envs } from "src/config/envs";
+import { normalizeEmail } from "src/users/utils/email.util";
 
 const prisma = new PrismaClient();
 
 export async function seedUsers() {
     const saltOrRounds = 10;
     const hashedPassword = await bcrypt.hash(envs.superAdminPass, saltOrRounds);
-    const email = envs.superAdmimEmail;
+    const email = normalizeEmail(envs.superAdmimEmail);
     const birthdayDate = new Date("1997-11-28");
 
     console.log("Adding Super Administrator...");

@@ -1,11 +1,9 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, HttpStatus, Query, UseGuards, Request } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
-import { AuthService } from 'src/auth/auth.service';
 import { SUCCESS_MESSAGE } from 'src/common/constants/responses-messages.constants';
-import { AuthGuard } from 'src/auth/guards/auth.guard';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { UserTypesGuard } from 'src/auth/guards/user-types.guard';
 import { UserTypes } from 'src/auth/decorators/user-types.decorator';
 import { USER_TYPE_ADMIN_INDEX, USER_TYPE_SUPER_ADMIN_INDEX } from 'src/common/constants/user.constants';
@@ -15,41 +13,28 @@ import { SelfOrAdminGuard } from 'src/auth/guards/self-or-admin.guard';
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
-    private readonly authService: AuthService
   ) { }
-
-  @Post('register')
-  async registerLocal(@Body() createUserDto: CreateUserDto) {
-    const user = await this.usersService.register(createUserDto);
-    return {
-      data: user,
-      token: await this.authService.signJwt(user),
-      message: 'Usuario registrado exitosamente',
-      statusCode: HttpStatus.CREATED,
-      status: SUCCESS_MESSAGE,
-    }
-  }
-
+  
   @UserTypes([USER_TYPE_ADMIN_INDEX, USER_TYPE_SUPER_ADMIN_INDEX])
-  @UseGuards(AuthGuard, UserTypesGuard)
+  @UseGuards(JwtAuthGuard, UserTypesGuard)
   @Get()
   findAll(@Query() paginationDto: PaginationDto) {
     return this.usersService.findAll(paginationDto);
   }
 
-  @UseGuards(AuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const user = await this.usersService.findOne(id);
     return {
-      message: 'Usuario econtrado exitosamente',
+      message: 'Usuario encontrado exitosamente',
       data: user,
       statusCode: HttpStatus.OK,
       status: SUCCESS_MESSAGE,
     };
   }
 
-  @UseGuards(AuthGuard, SelfOrAdminGuard)
+  @UseGuards(JwtAuthGuard, SelfOrAdminGuard)
   @Patch(':id')
   async update(@Param('id', ParseIntPipe) id: number, @Body() updateUserDto: UpdateUserDto) {
     return { 
@@ -59,7 +44,7 @@ export class UsersController {
     };
   }
 
-  @UseGuards(AuthGuard, SelfOrAdminGuard)
+  @UseGuards(JwtAuthGuard, SelfOrAdminGuard)
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number) {
     const user = await this.usersService.remove(id);
@@ -71,7 +56,7 @@ export class UsersController {
     }
   }
 
-  @UseGuards(AuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Post('/follow/:id')
   async followUser(@Param('id', ParseIntPipe) followedId: number, @Request() req) {
     return {
@@ -84,7 +69,7 @@ export class UsersController {
     }
   }
 
-  @UseGuards(AuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Post('/unfollow/:id')
   async unfollowUser(@Param('id', ParseIntPipe) followedId: number, @Request() req) {
     return {

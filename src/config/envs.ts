@@ -6,7 +6,9 @@ interface EnvVars {
     DATABASE_URL: string;
     SUPER_ADMINISTRATOR_PASS: string;
     SUPER_ADMINISTRATOR_EMAIL: string;
-    JWT_SECRET_PASSWORD: string;
+    GOOGLE_AUTH_SECRET_ID: string;
+    GOOGLE_AUTH_SECRET_CLIENT: string;
+    GOOGLE_AUTH_CALLBACK_URI: string;
 }
 
 const envsSchema = joi.object({
@@ -15,10 +17,13 @@ const envsSchema = joi.object({
     SUPER_ADMINISTRATOR_PASS: joi.string().required(),
     SUPER_ADMINISTRATOR_EMAIL: joi.string().required(),
     JWT_SECRET_PASSWORD: joi.string().required(),
+    GOOGLE_AUTH_SECRET_ID: joi.string().required(),
+    GOOGLE_AUTH_SECRET_CLIENT: joi.string().required(),
+    GOOGLE_AUTH_CALLBACK_URI: joi.string().required(),
 })
-.unknown(true);
+    .unknown(true);
 
-const { error, value } = envsSchema.validate( process.env );
+const { error, value } = envsSchema.validate(process.env);
 
 if (error) {
     throw new Error(`Config validation error: ${error?.message}`);
@@ -31,5 +36,7 @@ export const envs = {
     dbUrl: envVars.DATABASE_URL,
     superAdminPass: envVars.SUPER_ADMINISTRATOR_PASS,
     superAdmimEmail: envVars.SUPER_ADMINISTRATOR_EMAIL,
-    jwtSecret: envVars.JWT_SECRET_PASSWORD,
+    googleAuthId: envVars.GOOGLE_AUTH_SECRET_ID,
+    googleAuthClient: envVars.GOOGLE_AUTH_SECRET_CLIENT,
+    googleAuthCallbackUri: envVars.GOOGLE_AUTH_CALLBACK_URI,
 }
