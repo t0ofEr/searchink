@@ -2,17 +2,18 @@ import { Module } from '@nestjs/common';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
-import jwtConfig from './config/jwt.config';
-import googleOauthConfig from './config/google-oauth.config';
 import { envValidationSchema } from './config/env.validation';
 import { CacheModule } from '@nestjs/cache-manager';
+import { AuthIdenityModule } from './auth-identity/auth-identity.module';
+import { PrismaModule } from './prisma/prisma.module';
+import { allConfigsArray } from './config';
 
 @Module({
 
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [jwtConfig, googleOauthConfig],
+      load: allConfigsArray,
       validationSchema: envValidationSchema,
       validationOptions: {
         allowUnknown: true,
@@ -24,6 +25,8 @@ import { CacheModule } from '@nestjs/cache-manager';
     }),
     UsersModule,
     AuthModule,
+    AuthIdenityModule,
+    PrismaModule
   ],
   controllers: [],
   providers: [],

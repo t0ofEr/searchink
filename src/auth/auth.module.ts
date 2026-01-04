@@ -10,15 +10,19 @@ import { PassportModule } from '@nestjs/passport';
 import jwtConfig from 'src/config/jwt.config';
 import cacheConfig from 'src/config/cache.config';
 import { GoogleStrategy } from './strategies/google.strategy';
+import { AuthIdenityModule } from 'src/auth-identity/auth-identity.module';
+import superAdminConfig from 'src/config/super-admin.config';
 
 @Module({
   imports: [
     ConfigModule.forFeature(googleOauthConfig),
     ConfigModule.forFeature(jwtConfig),
     ConfigModule.forFeature(cacheConfig),
-    UsersModule,
-    PassportModule,
+    ConfigModule.forFeature(superAdminConfig),
     JwtModule.registerAsync(jwtConfig.asProvider()),
+    UsersModule,
+    AuthIdenityModule,
+    PassportModule,
   ],
   providers: [AuthService, JwtStrategy, GoogleStrategy],
   controllers: [AuthController],

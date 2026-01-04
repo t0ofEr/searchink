@@ -62,7 +62,7 @@ export class CreateUserDto {
     @IsEnum(GenderEnum, {
         message: 'El género seleccionado no es válido',
     })
-    gender: GenderEnum;
+    gender?: GenderEnum;
 
     @IsOptional()
     @IsUrl({}, { message: 'Instagram debe ser una URL válida' })

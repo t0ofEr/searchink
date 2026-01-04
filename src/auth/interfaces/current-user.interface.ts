@@ -1,3 +1,5 @@
+import { ProfileStatus } from "generated/prisma/enums";
+
 export interface CurrentUser {
     id: number;
     username: string;
@@ -5,4 +7,5 @@ export interface CurrentUser {
     user_type_id: number;
     roles: string[]; // Importante: los roles que calculamos antes
     active: boolean;
+    profile_status: ProfileStatus
 }

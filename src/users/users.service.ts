@@ -1,11 +1,8 @@
-import { BadRequestException, ConflictException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AuthProvider } from 'generated/prisma/client';
-import { isMinor } from 'src/utils/minor-age-validator.util';
-import { mapPublicUserTypeToId } from './domain/user-type.domain';
-import * as bcrypt from 'bcrypt';
 import { USER_TYPE_SUPER_ADMIN_INDEX } from 'src/common/constants/user.constants';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { USER_PUBLIC_SELECT, USER_PUBLIC_SELECT_WITH_ID, USER_SESSION_SELECT } from 'prisma/selects/users/default.select';
@@ -13,96 +10,81 @@ import { FollowUserDto } from './dto/follow-user.dto';
 import { UnfollowUserDto } from './dto/unfollow-user.dto';
 import { GoogleUserDto } from 'src/auth/dto/google-user.dto';
 import { generateUsername } from './utils/username.util';
-import { mergeIfEmpty, resolveProfileStatus } from './utils/profile.util';
+import { resolveProfileStatus } from './domain/profile.domain';
 import { normalizeEmail } from './utils/email.util';
+import { Prisma } from 'generated/prisma/browser';
+import { buildUserBaseData } from './helpers/data.helper';
+import { assertNotSameUser } from './helpers/validators.helper';
+import { AuthIdentityService } from 'src/auth-identity/auth-identity.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) { }
+  constructor(
+    private prisma: PrismaService,
+    private authIdentityService: AuthIdentityService,
+  ) { }
+  async assertUsersActive(ids: number[]): Promise<void> {
+    const count = await this.prisma.user.count({
+      where: {
+        id: { in: ids },
+        active: true,
+        user_type_id: {
+          not: USER_TYPE_SUPER_ADMIN_INDEX,
+        }
+      },
+    });
 
-  private assertNotSameUser(
-    actorId: number,
-    targetId: number,
-    message = 'La acción no es válida sobre el mismo usuario',
-  ): void {
-    if (actorId === targetId) {
-      throw new BadRequestException(message);
+    if (count !== ids.length) {
+      throw new NotFoundException('Uno o más usuarios no existen o están inactivos');
     }
   }
 
+  private async createNewLocalUser(
+    tx: Prisma.TransactionClient,
+    userData: any,
+    password: string,
+  ) {
+    const user = await tx.user.create({
+      data: userData,
+    });
 
-  async localRegister(dto: CreateUserDto) {
-    const { password, confirm_password, user_type, birthday_date, email, ...rest } = dto;
-    const birthdayDate = new Date(birthday_date);
-    const normalizedEmail = normalizeEmail(email);
+    await this.authIdentityService.createAuthIdentity(user.id, user.email, AuthProvider.LOCAL, password, tx);
 
-    return this.prisma.$transaction(async (tx) => {
-      const existingUser = await tx.user.findUnique({
-        where: { email: normalizedEmail },
-      });
-
-      if (!existingUser) {
-        const user = await tx.user.create({
-          data: {
-            email: normalizedEmail,
-            birthday_date: birthdayDate,
-            is_minor: isMinor(birthdayDate),
-            user_type_id: mapPublicUserTypeToId(user_type),
-            ...rest,
-          },
-        });
-
-        await tx.authIdentity.create({
-          data: {
-            user_id: user.id,
-            provider: AuthProvider.LOCAL,
-            provider_id: normalizedEmail,
-            password: await bcrypt.hash(password, 10),
-          },
-        });
-
-        return tx.user.update({
-          where: { id: user.id },
-          data: {
-            profile_status: resolveProfileStatus(user),
-            created_by: user.id,
-            modified_by: user.id,
-          },
-          select: USER_PUBLIC_SELECT_WITH_ID,
-        });
-      }
-
-      await tx.authIdentity.create({
-        data: {
-          user_id: existingUser.id,
-          provider: AuthProvider.LOCAL,
-          provider_id: normalizedEmail,
-          password: await bcrypt.hash(password, 10),
-        },
-      });
-
-      const updateData = mergeIfEmpty(existingUser, {
-        birthday_date: birthdayDate,
-        is_minor: isMinor(birthdayDate),
-        user_type_id: mapPublicUserTypeToId(user_type),
-        ...rest
-      });
-
-      const updatedUser = await tx.user.update({
-        where: { id: existingUser.id },
-        data: updateData,
-      });
-
-      return tx.user.update({
-        where: { id: updatedUser.id },
-        data: {
-          profile_status: resolveProfileStatus(updatedUser),
-        },
-        select: USER_PUBLIC_SELECT_WITH_ID,
-      });
+    return tx.user.update({
+      where: { id: user.id },
+      data: {
+        profile_status: resolveProfileStatus(user),
+        created_by: user.id,
+        modified_by: user.id,
+      },
+      select: USER_PUBLIC_SELECT_WITH_ID,
     });
   }
 
+  async localRegister(dto: CreateUserDto) {
+    const normalizedEmail = normalizeEmail(dto.email);
+    const baseUserData = buildUserBaseData(dto);
+
+    return this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { email: normalizedEmail },
+        include: { authIdentities: true },
+      });
+
+      if (!user) {
+        return this.createNewLocalUser(tx, baseUserData, dto.password);
+      }
+
+      const { password, confirm_password, ...restData } = baseUserData;
+
+      return this.authIdentityService.attachLocalIdentityToExistingUser(
+        tx,
+        user,
+        restData,
+        password,
+      );
+    });
+  }
 
   async googleRegister(googleUserDto: GoogleUserDto) {
     const { sub, email, ...userData } = googleUserDto;
@@ -114,14 +96,8 @@ export class UsersService {
           username: await generateUsername(userData.firstname, tx),
         },
       });
-
-      await tx.authIdentity.create({
-        data: {
-          user_id: user.id,
-          provider: AuthProvider.GOOGLE,
-          provider_id: sub,
-        },
-      });
+      
+      await this.authIdentityService.createAuthIdentity(user.id, sub, AuthProvider.GOOGLE, undefined, tx);
 
       return await tx.user.update({
         where: { id: user.id },
@@ -180,7 +156,10 @@ export class UsersService {
 
   async update(id: number, updateUserDto: UpdateUserDto) {
     await this.findOne(id);
-
+    
+    if(updateUserDto.email) {
+      updateUserDto.email = normalizeEmail(updateUserDto.email);
+    }
     const updatedUser = await this.prisma.user.update({
       where: { id: id },
       data: updateUserDto,
@@ -215,62 +194,11 @@ export class UsersService {
     return user;
   }
 
-  async getUserAuthIdentity(provider: AuthProvider, provider_id: string) {
-    const userAuth = await this.prisma.authIdentity.findUnique({
-      where: {
-        provider_provider_id: {
-          provider,
-          provider_id,
-        },
-      },
-      select: {
-        provider: true,
-        provider_id: true,
-        password: true,
-        user_id: true,
-        user: {
-          select: USER_PUBLIC_SELECT_WITH_ID
-        }
-      },
-    });
-    return userAuth;
-  }
-
-  async linkAuthIdentity(userId: number, provider: AuthProvider, providerId: string) {
-    return this.prisma.authIdentity.create({
-      data: {
-        user_id: userId,
-        provider: provider,
-        provider_id: providerId,
-      },
-    });
-  }
-
-  async assertUsersActive(ids: number[]): Promise<void> {
-    const count = await this.prisma.user.count({
-      where: {
-        id: { in: ids },
-        active: true,
-        user_type_id: {
-          not: USER_TYPE_SUPER_ADMIN_INDEX,
-        }
-      },
-    });
-
-    if (count !== ids.length) {
-      throw new NotFoundException('Uno o más usuarios no existen o están inactivos');
-    }
-  }
-
   async followUser(followUserDto: FollowUserDto) {
 
     const { follower_id, followed_id } = followUserDto;
 
-    this.assertNotSameUser(
-      follower_id,
-      followed_id,
-      'No puedes seguirte a ti mismo',
-    );
+    assertNotSameUser(follower_id, followed_id, 'No puedes seguirte a ti mismo');
 
     await this.assertUsersActive([follower_id, followed_id]);
 

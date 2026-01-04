@@ -35,7 +35,7 @@ export class AuthController {
             status: SUCCESS_MESSAGE,
         }
     }
-    
+
     @UseGuards(JwtAuthGuard)
     @Get('verify')
     verifyToken(@User() user: CurrentUser, @Token() token: string) {
@@ -44,13 +44,21 @@ export class AuthController {
 
     @UseGuards(GoogleAuthGuard)
     @Get("google/login")
-    googleLogin(){
+    googleLogin() {
     }
-    
+
     @UseGuards(GoogleAuthGuard)
     @Get('google/callback')
     async googleCallback(@Req() req, @Res() res) {
-        //Retornar Token
-        res.redirect('http://localhost:3000/api/random-something');
+        const token = await this.authService.signJwt(req.user);
+
+        res.cookie('token', token, {
+            httpOnly: true,   
+            secure: process.env.NODE_ENV === 'production', 
+            sameSite: 'lax',
+            maxAge: 3600000
+        });
+
+        res.redirect(`http://localhost:3000/api/random-something`);
     }
 }

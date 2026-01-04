@@ -5,17 +5,18 @@ import { JwtService } from '@nestjs/jwt';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { LoginUserDto } from './dto/login-user.dto';
 import * as bcrypt from 'bcrypt';
-import { envs } from 'src/config/envs';
 import { SUCCESS_MESSAGE } from 'src/common/constants/responses-messages.constants';
 import { GoogleUserDto } from './dto/google-user.dto';
 import { AuthProvider } from 'generated/prisma/enums';
 import { normalizeEmail } from 'src/users/utils/email.util';
+import { AuthIdentityService } from 'src/auth-identity/auth-identity.service';
 
 @Injectable()
 export class AuthService {
     constructor(
         private usersService: UsersService,
-        private jwtService: JwtService
+        private jwtService: JwtService,
+        private authIdentityService: AuthIdentityService,
     ) { }
 
     async signJwt(payload: JwtPayload) {
@@ -63,7 +64,7 @@ export class AuthService {
 
     async validateUser(email: string, password: string): Promise<any> {
         const user = await this.usersService.getUserByEmail(email);
-        const userAuthIdentity = await this.usersService.getUserAuthIdentity(AuthProvider.LOCAL, normalizeEmail(email));
+        const userAuthIdentity = await this.authIdentityService.getAuthIdentity(AuthProvider.LOCAL, normalizeEmail(email));
 
         if (!userAuthIdentity || !userAuthIdentity.password) {
             throw new UnauthorizedException({
@@ -88,19 +89,25 @@ export class AuthService {
 
     async validateGoogleUser(googleUserDto: GoogleUserDto) {
         const { sub, email } = googleUserDto;
-        const googleIdentity = await this.usersService.getUserAuthIdentity(
+        const googleIdentity = await this.authIdentityService.getAuthIdentity(
             AuthProvider.GOOGLE,
             sub,
         );
 
-        if (googleIdentity) {
+        if (googleIdentity && googleIdentity.user) {
+            if (!googleIdentity.user.active) {
+                throw new UnauthorizedException({
+                    message: 'Acceso denegado',
+                    description: 'Usuario fue eliminado',
+                });
+            }
             return googleIdentity.user;
         }
 
         const existingUser = await this.usersService.getUserByEmail(email, false);
 
         if (existingUser) {
-            await this.usersService.linkAuthIdentity(existingUser.id, AuthProvider.GOOGLE, sub);
+            await this.authIdentityService.createAuthIdentity(existingUser.id, sub, AuthProvider.GOOGLE);
             return existingUser;
         }
 

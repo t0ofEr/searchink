@@ -6,7 +6,6 @@ export function isProfileComplete(user: User): boolean {
         user.username &&
         user.birthday_date &&
         user.is_minor !== null &&
-        user.gender &&
         user.user_type_id
     );
 }

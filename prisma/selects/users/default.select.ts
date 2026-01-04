@@ -31,4 +31,5 @@ export const USER_SESSION_SELECT = {
     user_type_id: true,
     active: true,
     has_membership: true,
+    profile_status: true,
 } satisfies Prisma.UserSelect;
